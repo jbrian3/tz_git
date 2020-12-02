@@ -1,46 +1,95 @@
 import pandas as pd
 import numpy as np
 import cx_Oracle as cx
+import datetime
 
 # init只在初始运行一次，连接oracle用的
-cx.init_oracle_client('/Users/rui/Downloads/instantclient_19_8')
+# cx.init_oracle_client('/Users/rui/Downloads/instantclient_19_8')
 
 #engine = create_engine("oracle+cx_oracle://de_jyzlpj:oracle@kf/?encoding=UTF-8&nencoding=UTF-8")
 # cx_connector = 'de_jyzlpj/oracle@192.2.2.15:1521/kf'
 # conn = cx.connect(cx_connector)
 # cursor = conn.cursor()
 
-# data = [{
-#     'agg_jysc_dzyszb_cc': '5.83',
-#     'agg_jysc_lrlcl_cc': '0',
-#     'cycle_name': '202010',
-#     'sc01_name2': '3301'
-# }, {
-#     'agg_jysc_dzyszb_cc': '3.8',
-#     'agg_jysc_lrlcl_cc': '0',
-#     'cycle_name': '202011',
-#     'sc01_name2': '3301'
-# }, {
-#     'agg_jysc_dzyszb_cc': '2.9',
-#     'agg_jysc_lrlcl_cc': '0.0345',
-#     'cycle_name': '202012',
-#     'sc01_name2': '3301'
-# }, {
-#     'agg_jysc_dzyszb_cc': '22.5',
-#     'agg_jysc_lrlcl_cc': '0.0222',
-#     'cycle_name': '202007',
-#     'sc01_name2': '3301'
-# }, {
-#     'agg_jysc_dzyszb_cc': '2.28',
-#     'agg_jysc_lrlcl_cc': '0',
-#     'cycle_name': '202008',
-#     'sc01_name2': '3301'
-# }, {
-#     'agg_jysc_dzyszb_cc': '0.85',
-#     'agg_jysc_lrlcl_cc': '0',
-#     'cycle_name': '202009',
-#     'sc01_name2': '3301'
-# }]
+# Get today
+today = datetime.date.today()
+# print("Today's date:", today)
+# print(today.year)
+t = datetime.datetime(today.year, today.month, today.day)
+stop_month = t.strftime('%Y%m')
+# print(stop_month)
+
+data = [{
+    'agg_jysc_dzyszb_cc': '5.83',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202010',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '3.8',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202011',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '2.9',
+    'agg_jysc_lrlcl_cc': '0.0345',
+    'cycle_name': '202012',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '22.5',
+    'agg_jysc_lrlcl_cc': '0.0222',
+    'cycle_name': '202007',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '2.28',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202008',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '0.85',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202009',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '0.85',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202003',
+    'sc01_name2': '3301'
+}, {
+    'agg_jysc_dzyszb_cc': '5.83',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202010',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '3.8',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202011',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '2.9',
+    'agg_jysc_lrlcl_cc': '0.0345',
+    'cycle_name': '202012',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '22.5',
+    'agg_jysc_lrlcl_cc': '0.0222',
+    'cycle_name': '202007',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '2.28',
+    'agg_jysc_lrlcl_cc': '1',
+    'cycle_name': '202008',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '0.85',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202009',
+    'sc01_name2': '3311'
+}, {
+    'agg_jysc_dzyszb_cc': '0.85',
+    'agg_jysc_lrlcl_cc': '0',
+    'cycle_name': '202003',
+    'sc01_name2': '3311'
+}]
 
 
 def getVarNorm(a_list):
@@ -80,7 +129,11 @@ def result_jy(data):
     df = pd.DataFrame.from_records(data, columns=[
         'sc01_name2', 'cycle_name', 'agg_jysc_lrlcl_cc',
         'agg_jysc_dzyszb_cc']).sort_values(by=['sc01_name2', 'cycle_name'])
-    # #print(df['sc01_name2'].unique())
+    print(df)
+    df = df[df['cycle_name']>='202004']
+    df = df[df['cycle_name']<stop_month]
+    print("Delete data before 202004 {}".format(df))
+    print(df['sc01_name2'].unique())
     # pd.json_normalize
     city_code_list = df['sc01_name2'].unique()
     time_list = df['cycle_name'].unique()
@@ -185,6 +238,9 @@ def result_jy(data):
                 cur_season -= 1
         city_name = city_tran[city]
         season_name = str(cur_year) + str(cur_season)
+        # Round to 2
+        season_score = round(season_score, 2)
+        print('Rounded season_score', season_score)
         # print('City {}, Season {}: {}'.format(city_name, season_name, season_score))
 
         # DB
@@ -201,10 +257,36 @@ def result_jy(data):
             # 更新季度数据
             cursor.execute(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
             print('Data updated successfully')
+            # 获取六大维度分数
+            cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
+            row = cursor.fetchone()
+            print('row: ', row)
+            # 检查全部维度不为空时，计算总分
+            if_total = not all(row)
+            if if_total is False:
+                total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
+                total = round(total, 2)
+                print('total: ', total)
+                # 更新总分
+                cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                print('Total score of {} updated successfully'.format(city))
         else:
             # 插入新一季度数据
             cursor.execute(f"insert into JYCY (AAA001,AAA011,AAA004) VALUES ('{city_name}',{season_name},{season_score})")
             print('Data added successfully')
+            # 获取六大维度分数
+            cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
+            row = cursor.fetchone()
+            print('row: ', row)
+            # 检查全部维度不为空时，计算总分
+            if_total = not all(row)
+            if if_total is False:
+                total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
+                total = round(total, 2)
+                print('total: ', total)
+                # 更新总分
+                cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                print('Total score of {} updated successfully'.format(city))
     cursor.close()
     conn.commit()
     conn.close()
