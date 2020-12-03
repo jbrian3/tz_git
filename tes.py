@@ -8,7 +8,7 @@ import config
 try:
     cx.init_oracle_client('/Users/rui/Downloads/instantclient_19_8')
 except Exception:
-    pass
+    print('init只在初始运行一次，连接oracle用的')
 
 # Get today
 today = datetime.date.today()
@@ -126,11 +126,6 @@ def result_jy(data):
     #     config.password,
     #     config.dsn,
     #     encoding=config.encoding)
-    cx_connector = 'de_jyzlpj/oracle@192.2.2.15:1521/kf'
-    conn = cx.connect(cx_connector)
-    # show the version of the Oracle Database
-    print(conn.version)
-    cursor = conn.cursor()
 
     # 获取单城市数据
     df = pd.DataFrame.from_records(data, columns=[
@@ -196,7 +191,7 @@ def result_jy(data):
     # 平均变化率
     # AHP合成变化率
         average_var1_norm = (a_weight*np.array(getVarNorm(a_list)) + b_weight*np.array(getVarNorm(b_list))) / (a_weight + b_weight)
-        #print('平均变化率：{}'.format(average_var1_norm))
+        # print('平均变化率：{}'.format(average_var1_norm))
 
     # 计算月度分数（使用初始值和变化率）
         new_var = (200+average_var1_norm)/(200-average_var1_norm)
@@ -262,54 +257,57 @@ def result_jy(data):
         # print('City {}, Season {}: {}'.format(city_name, season_name, season_score))
 
         # DB
-        conn = cx.connect(cx_connector)
-        cursor = conn.cursor()
-        # print(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+        try:
+            conn = cx.connect(config.cx_connector)
+            cursor = conn.cursor()
+            # print(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
 
-        cursor.execute(f"select AAA004 from JYCY where AAA001='{city_name}' and AAA011 = {season_name}")
+            cursor.execute(f"select AAA004 from JYCY where AAA001='{city_name}' and AAA011 = {season_name}")
 
-        # cursor.execute(f"select AAA005 from JYCY where AAA001='杭州市' and AAA011 = 20204")
+            # cursor.execute(f"select AAA005 from JYCY where AAA001='杭州市' and AAA011 = 20204")
 
-        rows = cursor.fetchall()
-        print('rows: {}'.format(rows))
-        # print(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name};")
-        if rows != [] or rows == [(None,)]:
-            # 更新季度数据
-            cursor.execute(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
-            print('Data updated successfully')
-            # 获取六大维度分数
-            cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
-            row = cursor.fetchone()
-            # print('row: ', row)
-            # 检查全部维度不为空时，计算总分
-            if_total = not all(row)
-            if if_total is False:
-                total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
-                total = round(total, 2)
-                print('total: ', total)
-                # 更新总分
-                cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
-                print('Total score of {} updated successfully'.format(city))
-        else:
-            # 插入新一季度数据
-            cursor.execute(f"insert into JYCY (AAA001,AAA011,AAA004) VALUES ('{city_name}',{season_name},{season_score})")
-            print('Data added successfully')
-            # 获取六大维度分数
-            cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
-            row = cursor.fetchone()
-            # print('row: ', row)
-            # 检查全部维度不为空时，计算总分
-            if_total = not all(row)
-            if if_total is False:
-                total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
-                total = round(total, 2)
-                print('total: ', total)
-                # 更新总分
-                cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
-                print('Total score of {} updated successfully'.format(city))
-    cursor.close()
-    conn.commit()
-    conn.close()
+            rows = cursor.fetchall()
+            print('rows: {}'.format(rows))
+            # print(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name};")
+            if rows != [] or rows == [(None,)]:
+                # 更新季度数据
+                cursor.execute(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                print('Data updated successfully')
+                # 获取六大维度分数
+                cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                row = cursor.fetchone()
+                # print('row: ', row)
+                # 检查全部维度不为空时，计算总分
+                if_total = not all(row)
+                if if_total is False:
+                    total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
+                    total = round(total, 2)
+                    print('total: ', total)
+                    # 更新总分
+                    cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                    print('Total score of {} updated successfully'.format(city))
+            else:
+                # 插入新一季度数据
+                cursor.execute(f"insert into JYCY (AAA001,AAA011,AAA004) VALUES ('{city_name}',{season_name},{season_score})")
+                print('Data added successfully')
+                # 获取六大维度分数
+                cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                row = cursor.fetchone()
+                # print('row: ', row)
+                # 检查全部维度不为空时，计算总分
+                if_total = not all(row)
+                if if_total is False:
+                    total = (4*(row[3] + row[5]) + 2*(row[0] + row[1] + row[2] + row[4]))/16
+                    total = round(total, 2)
+                    print('total: ', total)
+                    # 更新总分
+                    cursor.execute(f"UPDATE  JYCY  SET AAA010 = {total} where AAA001 = '{city_name}' and AAA011 = {season_name}")
+                    print('Total score of {} updated successfully'.format(city))
+            cursor.close()
+            conn.commit()
+            conn.close()
+        except Exception:
+            print('DB error alert')
     return dict_season
 
 
