@@ -2,14 +2,13 @@ import pandas as pd
 import numpy as np
 import cx_Oracle as cx
 import datetime
+import config
 
 # init只在初始运行一次，连接oracle用的
-# cx.init_oracle_client('/Users/rui/Downloads/instantclient_19_8')
-
-#engine = create_engine("oracle+cx_oracle://de_jyzlpj:oracle@kf/?encoding=UTF-8&nencoding=UTF-8")
-# cx_connector = 'de_jyzlpj/oracle@192.2.2.15:1521/kf'
-# conn = cx.connect(cx_connector)
-# cursor = conn.cursor()
+try:
+    cx.init_oracle_client('/Users/rui/Downloads/instantclient_19_8')
+except Exception:
+    pass
 
 # Get today
 today = datetime.date.today()
@@ -121,19 +120,27 @@ def result_jy(data):
     '''
 
     '''
+    conn = None
+    # conn = cx.connect(
+    #     config.username,
+    #     config.password,
+    #     config.dsn,
+    #     encoding=config.encoding)
     cx_connector = 'de_jyzlpj/oracle@192.2.2.15:1521/kf'
     conn = cx.connect(cx_connector)
+    # show the version of the Oracle Database
+    print(conn.version)
     cursor = conn.cursor()
 
     # 获取单城市数据
     df = pd.DataFrame.from_records(data, columns=[
         'sc01_name2', 'cycle_name', 'agg_jysc_lrlcl_cc',
         'agg_jysc_dzyszb_cc']).sort_values(by=['sc01_name2', 'cycle_name'])
-    print(df)
+    # print(df)
     df = df[df['cycle_name']>='202004']
     df = df[df['cycle_name']<stop_month]
-    print("Delete data before 202004 {}".format(df))
-    print(df['sc01_name2'].unique())
+    # print("Delete data before 202004 {}".format(df))
+    # print(df['sc01_name2'].unique())
     # pd.json_normalize
     city_code_list = df['sc01_name2'].unique()
     time_list = df['cycle_name'].unique()
@@ -170,6 +177,7 @@ def result_jy(data):
     }
 
     dict = []  # 各城市分数
+    dict_season = []
 
     for city in city_code_list:
         a0 = market_score_April[city]
@@ -240,10 +248,22 @@ def result_jy(data):
         season_name = str(cur_year) + str(cur_season)
         # Round to 2
         season_score = round(season_score, 2)
-        print('Rounded season_score', season_score)
+
+        #
+        city_dict_season = {}  # 单组数据
+        city_dict_season["area"] = city_name
+        city_dict_season["qb"] = season_name
+        city_dict_season["score"] = season_score
+        # print('city_dict_season: {}'.format(city_dict_season))
+        dict_season.append(city_dict_season)
+        print('dict_season: ', dict_season)
+
+        # print('Rounded season_score', season_score)
         # print('City {}, Season {}: {}'.format(city_name, season_name, season_score))
 
         # DB
+        conn = cx.connect(cx_connector)
+        cursor = conn.cursor()
         # print(f"UPDATE  JYCY  SET AAA001 = '{city_name}',AAA011 = {season_name},AAA004 = {season_score} where AAA001 = '{city_name}' and AAA011 = {season_name}")
 
         cursor.execute(f"select AAA004 from JYCY where AAA001='{city_name}' and AAA011 = {season_name}")
@@ -260,7 +280,7 @@ def result_jy(data):
             # 获取六大维度分数
             cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
             row = cursor.fetchone()
-            print('row: ', row)
+            # print('row: ', row)
             # 检查全部维度不为空时，计算总分
             if_total = not all(row)
             if if_total is False:
@@ -277,7 +297,7 @@ def result_jy(data):
             # 获取六大维度分数
             cursor.execute(f"select AAA004, AAA005, AAA006, AAA007, AAA008, AAA009 from JYCY where AAA001 = '{city_name}' and AAA011 = {season_name}")
             row = cursor.fetchone()
-            print('row: ', row)
+            # print('row: ', row)
             # 检查全部维度不为空时，计算总分
             if_total = not all(row)
             if if_total is False:
@@ -290,6 +310,7 @@ def result_jy(data):
     cursor.close()
     conn.commit()
     conn.close()
+    return dict_season
 
 
 if __name__ == '__main__':
