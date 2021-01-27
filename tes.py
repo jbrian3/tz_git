@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import cx_Oracle as cx
 import datetime
-import config
+import build.config as config
+import json
 
 # init只在初始运行一次，连接oracle用的
 try:
@@ -132,8 +133,8 @@ def result_jy(data):
         'sc01_name2', 'cycle_name', 'agg_jysc_lrlcl_cc',
         'agg_jysc_dzyszb_cc']).sort_values(by=['sc01_name2', 'cycle_name'])
     # print(df)
-    df = df[df['cycle_name']>='202004']
-    df = df[df['cycle_name']<stop_month]
+    df = df[df['cycle_name'] >= '202004']
+    df = df[df['cycle_name'] < stop_month]
     # print("Delete data before 202004 {}".format(df))
     # print(df['sc01_name2'].unique())
     # pd.json_normalize
@@ -190,7 +191,8 @@ def result_jy(data):
         b_list = pd.to_numeric(b_list_pd, downcast='float').to_numpy()
     # 平均变化率
     # AHP合成变化率
-        average_var1_norm = (a_weight*np.array(getVarNorm(a_list)) + b_weight*np.array(getVarNorm(b_list))) / (a_weight + b_weight)
+        average_var1_norm = (a_weight*np.array(getVarNorm(a_list)) +
+                             b_weight*np.array(getVarNorm(b_list))) / (a_weight + b_weight)
         # print('平均变化率：{}'.format(average_var1_norm))
 
     # 计算月度分数（使用初始值和变化率）
@@ -224,16 +226,22 @@ def result_jy(data):
         cur_year = last_year
         cur_season = last_season
         if last_month % 3 == 0:
-            season_score = np.average([city_score[-1], city_score[-2], city_score[-3]])
+            season_score = np.average([city_score[-1],
+                                      city_score[-2],
+                                      city_score[-3]])
         elif last_month % 3 == 1:
-            season_score = np.average([city_score[-2], city_score[-3], city_score[-4]])
+            season_score = np.average([city_score[-2],
+                                      city_score[-3],
+                                      city_score[-4]])
             if last_month == 1:
                 cur_year -= 1
                 cur_season = 4
             else:
                 cur_season -= 1
         else:
-            season_score = np.average([city_score[-3], city_score[-4], city_score[-5]])
+            season_score = np.average([city_score[-3],
+                                      city_score[-4],
+                                      city_score[-5]])
             if last_month == 2:
                 cur_year -= 1
                 cur_season = 4
@@ -308,7 +316,7 @@ def result_jy(data):
             conn.close()
         except Exception:
             print('DB error alert')
-    return dict_season
+    return json.dumps(dict_season, ensure_ascii=False)
 
 
 if __name__ == '__main__':
